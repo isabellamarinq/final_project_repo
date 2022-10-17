@@ -1,5 +1,6 @@
 library(ggplot2)
 library(tidyverse)
+library(patchwork)
 
 #Reading Data
 graph1data_og <- readRDS("objects/graph1data_og.rds")
