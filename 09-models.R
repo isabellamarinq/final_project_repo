@@ -2,11 +2,6 @@ library(ggplot2)
 library(tidyverse)
 library(modelsummary)
 
-test <- model1data_j |>
-  filter(year < 2007)
-
-lm(diffdiff ~ deltarep + + factor(year), data = test)
-
 #Reading Data
 model1data_og <- readRDS("objects/model1data_og.rds")
 model2data_og <- readRDS("objects/model2data_og.rds")
@@ -51,14 +46,10 @@ modelsummary(
   models, 
   fmt = 3,  
   gof_map = c("nobs"),
-  coef_rename = c("deltarep" = "Change in Representatives", 
-                  "new_dataset" = "New Data Set",
-                  "factor(year)1994" = "1994 Fixed Effects",
-                  "factor(year)2004" = "2004 Fixed Effects",
-                  "deltarep:state_big" = "Delta Rep X State Size",
-                  "deltarep:change_indicator2" = "Delta Rep X Lose Seats",
-                  "factor(year)2014" = "2014 Fixed Effects"),
+  coef_map = c("deltarep" = "Change in Representatives", 
+               "deltarep:state_big" = "Delta Rep X State Size",
+               "deltarep:change_indicator2" = "Delta Rep X Lose Seats",
+               "new_dataset" = "New Data Set"),
   statistic = "{std.error} ({p.value})",
-  stars = TRUE,
-  coef_omit = "(Intercept) | Big State | 1994 Fixed Effects | 2004 Fixed Effects | Direction of Change | 2014 Fixed Effects"
-  )
+  stars = TRUE
+)
