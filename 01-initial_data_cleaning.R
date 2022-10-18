@@ -12,6 +12,18 @@ data <- data |>
   rename("year" = "Year", "state" = "State") |>
   filter(!state == "District of Columbia")
 
+data <- data |>   #setting units to dollars
+  mutate(state_local_revenue_dollars = `StateandLocalRevenue_thousand dollars`*1000)
+
+data <- data |>   #setting units to dollars
+  mutate(fed_expenditures_dollars = `TotalFederalExpenditures_million dollars`*1000000)
+
+data <- data |>   #creating people per representative variable
+  mutate(people_per_rep = Pop / Rep)
+
+old_data <- old_data |>
+  mutate(fedex_dollars = fedex90*1000000)
+
 states_key <- tibble::tribble(
   ~state, ~fips,
   "Alabama",    1,
@@ -96,20 +108,33 @@ joint_data <- joint_data |>
   left_join(old_data, by = c("year", "state"))
 
 joint_data <- joint_data |>
+  mutate(fedex90_dollars = fedex90*1000000)
+
+#Creating joint variables
+
+joint_data <- joint_data |>
   unite("Pop_joint", c("Pop", "pop_census"), na.rm = TRUE, remove = FALSE)
 
 joint_data <- joint_data |>
   unite("Rep_joint", c("Rep", "seats_budget"), na.rm = TRUE, remove = FALSE)
 
+joint_data <- joint_data |>
+  unite("Funds_joint", c("state_local_revenue_dollars", "fedex90_dollars"), na.rm = TRUE, remove = FALSE)
+
 joint_data$Pop_joint <- sub(".*\\_","",joint_data$Pop_joint)
 
 joint_data$Rep_joint <- sub(".*\\_","",joint_data$Rep_joint)
+
+joint_data$Funds_joint <- sub(".*\\_","",joint_data$Funds_joint)
 
 joint_data <- joint_data |>
   mutate("Pop_joint" = as.numeric(Pop_joint))
 
 joint_data <- joint_data |>
   mutate("Rep_joint" = as.numeric(Rep_joint))
+
+joint_data <- joint_data |>
+  mutate("Funds_joint" = as.numeric(Funds_joint))
 
 saveRDS(data, "objects/data.rds")
 saveRDS(old_data, "objects/old_data.rds")

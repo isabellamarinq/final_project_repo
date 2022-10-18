@@ -6,18 +6,6 @@ data <- readRDS("objects/data.rds")
 old_data <- readRDS("objects/old_data.rds")
 joint_data <- readRDS("objects/joint_data.rds")
 
-data <- data |>   #setting units to dollars
-  mutate(state_local_revenue_dollars = `StateandLocalRevenue_thousand dollars`*1000)
-
-data <- data |>   #setting units to dollars
-  mutate(fed_expenditures_dollars = `TotalFederalExpenditures_million dollars`*1000000)
-
-data <- data |>   #creating people per representative variable
-  mutate(people_per_rep = Pop / Rep)
-
-old_data <- old_data |>
-  mutate(fedex_dollars = fedex90*1000000)
-
 ##data for funds comparison plot
 
 new_funds <- data |>
@@ -98,6 +86,8 @@ data_with_natpop_full <- data_with_natpop_full |>  #RRI Equation, adding RRI var
   mutate(lnrri = log((seats_budget_nplus1/state_pop)/(435/national_pop)))
 
 saveRDS(data_with_natpop_full, "objects/lnrri_table_data_full.rds")
+
+data_with_natpop_full <- data_with_natpop_full
 
 ##fig 3 replication
 
@@ -212,8 +202,6 @@ graph1 <- data_change_ind |>
   group_by(sign_change, year) |>
   summarize(tot_seats = sum(seats_budget_nplus1)) |>
   mutate(share_seats = tot_seats/435)
-
-graph1 <- graph1[ , c(2, 1, 3, 4, 5)]
 
 saveRDS(graph1, "objects/graph1data.rds")
 
@@ -385,6 +373,80 @@ data_t3_final_ind <- data_t3_final_ind |>  #clearning change indicator variable
 
 saveRDS(data_t3_final_ind, "objects/model3data.rds")
 
+##models joint
+
+#data set indicator
+
+joint_data <- joint_data |>
+  mutate(new_dataset = year) |>
+  mutate(
+    new_dataset = case_when(
+      new_dataset < 2007 ~ "0",
+      new_dataset > 2006 ~ "1")
+  ) |>
+  mutate(new_dataset = as.numeric(new_dataset))
+
+#data for Model 1
+
+data_t3_j <- joint_data |>  #getting lag to create deltarep
+  group_by(state) |>
+  mutate(seats_budget_lag = lag(Rep_joint, n = 2))
+
+data_t3_j <- data_t3_j |>  #Delta Rep (Independent Variable)
+  mutate(deltarep = log(Rep_joint) - log(seats_budget_lag))
+
+data_t3_j <- data_t3_j |>  #Lagged Outlays (for Dependent Variable)
+  group_by(state) |>
+  arrange(year) |>
+  mutate(share_outlays_lag2 = lag(Funds_joint, n = 2),
+         share_outlays_lag4 = lag(Funds_joint, n = 4))
+
+data_t3_j <- data_t3_j |>   #adding variable Diff
+  filter(year %in% c(1974, 1984, 1994, 2004, 2014)) |>
+  mutate(diff = log(Funds_joint) - log(share_outlays_lag2))
+
+data_t3_j <- data_t3_j |>   #adding variable LagDiff
+  filter((year == 1974 & fips != 41) | year == 1984 | year == 1994 |year == 2004 | year == 2014) |>
+  mutate(lagdiff = log(share_outlays_lag2)  - log(share_outlays_lag4)) 
+
+data_t3_final_j <- data_t3_j |>   #adding variable DiffDiff
+  mutate(diffdiff = diff - lagdiff) |>
+  filter(year %in% c(1974, 1994, 2004, 2014))
+
+saveRDS(data_t3_final_j, "objects/model1data_j.rds")
+
+#data for Model 2
+
+data_t3_final_size_j <- data_t3_final_j |>  #adding size variable
+  mutate(state_big = state) |>
+  mutate(state_big = case_when(
+    state_big == "California" ~ 1,
+    state_big == "Florida" ~ 1,
+    state_big == "Illinois" ~ 1,
+    state_big == "Michigan" ~ 1, 
+    state_big == "New York" ~ 1,
+    state_big == "Ohio" ~ 1,
+    state_big == "Pennsylvania" ~ 1,
+    state_big == "Texas" ~ 1)) 
+
+data_t3_final_size_j <- data_t3_final_size_j |>  #cleaning size variable
+  mutate_at('state_big', ~replace_na(.,0))
+
+saveRDS(data_t3_final_size_j, "objects/model2data_j.rds")
+
+#data for Model 3
+
+data_t3_final_ind_j <- data_t3_final_j |>  #creating change indicator variable
+  mutate(change_indicator = sign(deltarep)) 
+
+data_t3_final_ind_j <- data_t3_final_ind_j |>  #clearning change indicator variable
+  mutate(change_indicator2 = case_when(
+    change_indicator == 0 ~ 0,
+    change_indicator == -1 ~ 1,
+    change_indicator == 1 ~ 0)) 
+
+saveRDS(data_t3_final_ind_j, "objects/model3data_j.rds")
+
 ##maps
 
 #maps with seat values
@@ -410,6 +472,14 @@ people_per_rep_2013 <- data |>
   filter(year == 2013) |>
   select(state, people_per_rep)
 
+data_with_natpop_2012 <- data_with_natpop_full |>
+  filter(year == 2012) |>
+  select(state,lnrri)
+
+data_with_natpop_2013 <- data_with_natpop_full |>
+  filter(year == 2013) |>
+  select(state,lnrri)
+
 data_signs_og <- data_signs_og |>
   mutate(sign_change = as.factor(sign_change))
 
@@ -418,5 +488,7 @@ data_signs <- data_signs |>
 
 saveRDS(people_per_rep_2012, "objects/people_per_rep_2012.rds")
 saveRDS(people_per_rep_2013, "objects/people_per_rep_2013.rds")
+saveRDS(data_with_natpop_2012, "objects/lnrri_2012.rds")
+saveRDS(data_with_natpop_2013, "objects/lnrri_2013.rds")
 saveRDS(data_signs_og, "objects/data_signs_og.rds")
 saveRDS(data_signs, "objects/data_signs.rds")

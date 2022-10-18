@@ -5,8 +5,10 @@ rep2012_map_data <- readRDS("objects/rep_2012.rds")
 rep2013_map_data <- readRDS("objects/rep_2013.rds")
 ppr2012_map_data <- readRDS("objects/people_per_rep_2012.rds")
 ppr2013_map_data <- readRDS("objects/people_per_rep_2013.rds")
-change_map_data <- readRDS("data_signs.rds")
-change_map_data_old <- readRDS("data_signs_og.rds")
+change_map_data <- readRDS("objects/data_signs.rds")
+change_map_data_old <- readRDS("objects/data_signs_og.rds")
+lnrri2012_map_data <- readRDS("objects/lnrri_2012.rds")
+lnrri2013_map_data <- readRDS("objects/lnrri_2013.rds")
   
 plot_usmap(data = rep2012_map_data, values = "Rep", color = "black") + 
   scale_fill_continuous(
@@ -43,6 +45,24 @@ plot_usmap(data = ppr2013_map_data, values = "people_per_rep", color = "black") 
     label = scales::comma) + 
   theme(legend.position = "right") +
   labs(title = "People per Seat by State (2013)")
+
+plot_usmap(data = lnrri2012_map_data, values = "lnrri", color = "black") + 
+  scale_fill_continuous(
+    low = "white", 
+    high = "darkblue",
+    name = "ln(RRI) (2012)", 
+    label = scales::comma) + 
+  theme(legend.position = "right") +
+  labs(title = "Log RRI per State (2012)")
+
+plot_usmap(data = lnrri2013_map_data, values = "lnrri", color = "black") + 
+  scale_fill_continuous(
+    low = "white", 
+    high = "darkblue",
+    name = "ln(RRI) (2013)", 
+    label = scales::comma) + 
+  theme(legend.position = "right") +
+  labs(title = "Log RRI per State (2013)")
 
 plot_usmap(data = change_map_data, values = "sign_change", color = "black") + 
   scale_fill_manual(
