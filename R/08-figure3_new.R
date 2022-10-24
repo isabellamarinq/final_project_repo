@@ -12,19 +12,19 @@ graph3data <- readRDS("objects/graph3data.rds")
 g1 <- graph1data |>
   ggplot(aes(x = year, y = share_seats, group = sign_change)) +
   geom_line(aes(linetype = as.factor(sign_change))) +
-  labs(x = "Year", y = "Share of House of Representatives") 
+  labs(x = "Year", y = "Share of House of Representatives", linetype = "Seat Change Direction") 
 
 g2 <- graph2data |>
   ggplot(aes(x = year, y = share_pop, group = sign_change)) +
   geom_line(aes(linetype = as.factor(sign_change))) +
-  labs(x = "Year", y = "Share of Total Population")
+  labs(x = "Year", y = "Share of Total Population", linetype = "Seat Change Direction")
 
 g3 <- graph3data |>
   ggplot(aes(x = year, y = share_outlays, group = sign_change)) +
   geom_line(aes(linetype = as.factor(sign_change))) +
-  labs(x = "Fiscal Year", y = "Share of Federal Outlays")
+  labs(x = "Fiscal Year", y = "Share of Federal Outlays", linetype = "Seat Change Direction")
 
 #Compiling Graphs
 g1 + g2 + g3 + plot_layout(nrow = 3)
 
-ggsave("fig3_new.png", device = "png", path = "figures")
+ggsave("fig3_new.pdf", device = "pdf", path = "figures")

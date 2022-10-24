@@ -15,4 +15,4 @@ fig5_data |>
   geom_point(aes(y = expenditures_percapita)) +
   labs(title = "Apportionment Cycles as Natural Experiments", x = "Fiscal Year", y = "Dollars")
 
-ggsave("fig5.png", device = "png", path = "figures")
+ggsave("fig5.pdf", device = "pdf", path = "figures")
