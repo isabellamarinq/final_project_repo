@@ -1,17 +1,12 @@
 ---
-title: A template for the *arxiv* style
+title: Congressional Apportionment and State Funding
 authors:
-  - name: David S. Hippocampus
+  - name: Isabella Marin
     thanks: Use footnote for providing further information about author (webpage, alternative address)---*not* for acknowledging funding agencies. Optional.
-    department: Department of Computer Science
-    affiliation: Cranberry-Lemon University
-    location: Pittsburgh, PA 15213
-    email: hippo@cs.cranberry-lemon.edu
-  - name: Elias D. Striatum
-    department: Department of Electrical Engineering
-    affiliation: Mount-Sheikh University
-    location: Santa Narimana, Levand
-    email: stariate@ee.mount-sheikh.edu
+    department: Department of Political Science
+    affiliation: Yale University University
+    faculty: Shiro Kuriwaki
+    email: isabella.marinquintero@yale.edu
 abstract: |
   Enter the text of your abstract here.
 keywords:

@@ -27,3 +27,5 @@ g3_og <- graph3data_og |>
 #Compiling Graphs
 
 g1_og + g2_og + g3_og + plot_layout(nrow = 3)
+
+ggsave("fig3.png", device = "png", path = "figures")

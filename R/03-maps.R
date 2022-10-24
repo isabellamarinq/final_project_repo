@@ -1,5 +1,6 @@
 library(ggplot2)
 library(usmap)
+library(here)
 
 rep2012_map_data <- readRDS("objects/rep_2012.rds")
 rep2013_map_data <- readRDS("objects/rep_2013.rds")
@@ -19,6 +20,8 @@ plot_usmap(data = rep2012_map_data, values = "Rep", color = "black") +
   theme(legend.position = "right") +
   labs(title = "Seats in the House of Representatives by State (2012)")
 
+ggsave("seats2012_map.png", device = "png", path = "figures")
+
 plot_usmap(data = rep2013_map_data, values = "Rep", color = "black") + 
   scale_fill_continuous(
     low = "white", 
@@ -27,6 +30,8 @@ plot_usmap(data = rep2013_map_data, values = "Rep", color = "black") +
     label = scales::comma) + 
   theme(legend.position = "right") +
   labs(title = "Seats in the House of Representatives by State (2013)")
+
+ggsave("seats2013_map.png", device = "png", path = "figures")
 
 plot_usmap(data = ppr2012_map_data, values = "people_per_rep", color = "black") + 
   scale_fill_continuous(
@@ -37,6 +42,8 @@ plot_usmap(data = ppr2012_map_data, values = "people_per_rep", color = "black") 
   theme(legend.position = "right") +
   labs(title = "People per Seat by State (2012)")
 
+ggsave("peopleperseat_2012_map.png", device = "png", path = "figures")
+
 plot_usmap(data = ppr2013_map_data, values = "people_per_rep", color = "black") + 
   scale_fill_continuous(
     low = "white", 
@@ -45,6 +52,8 @@ plot_usmap(data = ppr2013_map_data, values = "people_per_rep", color = "black") 
     label = scales::comma) + 
   theme(legend.position = "right") +
   labs(title = "People per Seat by State (2013)")
+
+ggsave("peopleperseat_2013_map.png", device = "png", path = "figures")
 
 plot_usmap(data = lnrri2012_map_data, values = "lnrri", color = "black") + 
   scale_fill_continuous(
@@ -55,6 +64,8 @@ plot_usmap(data = lnrri2012_map_data, values = "lnrri", color = "black") +
   theme(legend.position = "right") +
   labs(title = "Log RRI per State (2012)")
 
+ggsave("lnrri_2012_map.png", device = "png", path = "figures")
+
 plot_usmap(data = lnrri2013_map_data, values = "lnrri", color = "black") + 
   scale_fill_continuous(
     low = "white", 
@@ -64,12 +75,16 @@ plot_usmap(data = lnrri2013_map_data, values = "lnrri", color = "black") +
   theme(legend.position = "right") +
   labs(title = "Log RRI per State (2013)")
 
+ggsave("lnrri_2013_map.png", device = "png", path = "figures")
+
 plot_usmap(data = change_map_data, values = "sign_change", color = "black") + 
   scale_fill_manual(
     values=c("white", "red", "pink"),
-    name = "Change in Representatives Indicator (1992-1994)") + 
+    name = "Change in Representatives Indicator (2012-2014)") + 
   theme(legend.position = "right") +
   labs(title = "States with Changes in Number of Federal Representatives (2012-2014)")
+
+ggsave("change_new_map.png", device = "png", path = "figures")
 
 plot_usmap(data = change_map_data_old, values = "sign_change", color = "black") + 
   scale_fill_manual(
@@ -77,3 +92,5 @@ plot_usmap(data = change_map_data_old, values = "sign_change", color = "black") 
     name = "Change in Representatives Indicator (1992-1994)") +
   theme(legend.position = "right") +
   labs(title = "States with Changes in Number of Federal Representatives (1992-1994)")
+
+ggsave("change_old_map.png", device = "png", path = "figures")
