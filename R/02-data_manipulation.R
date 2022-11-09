@@ -253,28 +253,48 @@ saveRDS(graph3, "objects/graph3data.rds")
 
 data_t3_og <- old_data |>  #getting lag to create deltarep
   group_by(state) |>
-  mutate(seats_budget_lag = lag(seats_budget, n = 2))
+  mutate(seats_budget_lag = lag(seats_budget, n = 2)) 
 
 data_t3_og <- data_t3_og |>  #Delta Rep (Independent Variable)
   mutate(deltarep = log(seats_budget) - log(seats_budget_lag))
 
+share <- data_t3_og |>  #calculating share of outlays (state outlays/outlays for all states in a year)
+  replace_na(list(fedex = 0)) |>
+  group_by(year) |>
+  summarize(annual_outlays = sum(fedex))
+
+data_t3_og <- share |>   #adding total national outlays to data frame
+  right_join(data_t3_og, by = "year")
+
+data_t3_og <- data_t3_og |>   #calculating share outlays
+  replace_na(list(fedex = 0)) |>
+  mutate(share_outlays = fedex / annual_outlays)
+
+data_t3_og |>   #checking my work
+  group_by(year) |>
+  summarize(sum = sum(share_outlays))
+
 data_t3_og <- data_t3_og |>  #Lagged Outlays (for Dependent Variable)
   group_by(state) |>
   arrange(year) |>
-  mutate(share_outlays_lag2 = lag(fedex, n = 2),
-         share_outlays_lag4 = lag(fedex, n = 4))
+  mutate(share_outlays_lag2 = lag(share_outlays, n = 2),
+         share_outlays_lag4 = lag(share_outlays, n = 4))
 
 data_t3_og <- data_t3_og |>   #adding variable Diff
   filter(year %in% c(1974, 1984, 1994, 2004)) |>
-  mutate(diff = log(fedex) - log(share_outlays_lag2))
+  mutate(diff = log(share_outlays) - log(share_outlays_lag2))
 
 data_t3_og <- data_t3_og |>   #adding variable LagDiff
   filter((year == 1974 & fips != 41) | year == 1984 | year == 1994 | year == 2004) |>
   mutate(lagdiff = log(share_outlays_lag2)  - log(share_outlays_lag4)) 
 
+
 data_t3_final_og <- data_t3_og |>   #adding variable DiffDiff
   mutate(diffdiff = diff - lagdiff) |>
   filter(year %in% c(1974, 1994, 2004))
+
+data_t3_final_og <- data_t3_final_og |>  #creating change indicator variable and only keeping switches
+  mutate(change_indicator = sign(deltarep))
 
 saveRDS(data_t3_final_og, "objects/model1data_og.rds")
 
@@ -299,10 +319,7 @@ saveRDS(data_t3_final_size_og, "objects/model2data_og.rds")
 
 #data for Model 3
 
-data_t3_final_ind_og <- data_t3_final_og |>  #creating change indicator variable
-  mutate(change_indicator = sign(deltarep)) 
-
-data_t3_final_ind_og <- data_t3_final_ind_og |>  #clearning change indicator variable
+data_t3_final_ind_og <- data_t3_final_og |>  #clearning change indicator variable
   mutate(change_indicator2 = case_when(
     change_indicator == 0 ~ 0,
     change_indicator == -1 ~ 1,
@@ -321,23 +338,43 @@ data_t3 <- data |>  #getting lag to create deltarep
 data_t3 <- data_t3 |>  #Delta Rep (Independent Variable)
   mutate(deltarep = log(Rep) - log(seats_budget_lag))
 
-data_t3 <- data_t3 |>  #Lagged Outlays (for Dependent Variable)
+data_t3 <- data_t3 |>   #standardizing units to millions of dollars
+  mutate(state_local_revenue_millions = state_local_revenue_dollars/1000000)
+
+share2 <- data_t3 |>  #calculating total federal revenues to later calculate for share of revenue (state federal revenue/revenue for all states in a year)
+  group_by(year) |>
+  summarize(annual_revenue = sum(state_local_revenue_millions))
+
+data_t3 <- share2 |>   #adding total national outlays to data frame
+  right_join(data_t3, by = "year")
+
+data_t3 <- data_t3 |>   #calculating share federal revenue
+  mutate(share_revenue = state_local_revenue_millions / annual_revenue)
+
+data_t3 |>   #checking my work
+  group_by(year) |>
+  summarize(sum = sum(share_revenue))
+
+data_t3 <- data_t3 |>  #Lagged revenue (for Dependent Variable)
   group_by(state) |>
   arrange(year) |>
-  mutate(share_outlays_lag2 = lag(state_local_revenue_dollars, n = 2),
-         share_outlays_lag4 = lag(state_local_revenue_dollars, n = 4))
+  mutate(share_revenue_lag2 = lag(share_revenue, n = 2),
+         share_revenue_lag4 = lag(share_revenue, n = 4))
 
 data_t3 <- data_t3 |>   #adding variable Diff
   filter(year %in% c(2004, 2014)) |>
-  mutate(diff = log(state_local_revenue_dollars) - log(share_outlays_lag2))
+  mutate(diff = log(share_revenue) - log(share_revenue_lag2))
 
 data_t3 <- data_t3 |>   #adding variable LagDiff
   filter(year == 2004 | year == 2014) |>
-  mutate(lagdiff = log(share_outlays_lag2)  - log(share_outlays_lag4)) 
+  mutate(lagdiff = log(share_revenue_lag2)  - log(share_revenue_lag4)) 
 
 data_t3_final <- data_t3 |>   #adding variable DiffDiff
   mutate(diffdiff = diff - lagdiff) |>
   filter(year %in% c(2004, 2014))
+
+data_t3_final <- data_t3_final |>  #creating change indicator variable and only keeping switches
+  mutate(change_indicator = sign(deltarep)) 
 
 saveRDS(data_t3_final, "objects/model1data.rds")
 
@@ -362,10 +399,7 @@ saveRDS(data_t3_final_size, "objects/model2data.rds")
 
 #data for Model 3
 
-data_t3_final_ind <- data_t3_final |>  #creating change indicator variable
-  mutate(change_indicator = sign(deltarep)) 
-
-data_t3_final_ind <- data_t3_final_ind |>  #clearning change indicator variable
+data_t3_final_ind <- data_t3_final |>  #clearning change indicator variable
   mutate(change_indicator2 = case_when(
     change_indicator == 0 ~ 0,
     change_indicator == -1 ~ 1,
@@ -386,6 +420,10 @@ joint_data <- joint_data |>
   ) |>
   mutate(new_dataset = as.numeric(new_dataset))
 
+#matching the units to other models
+joint_data <- joint_data |>
+  mutate(Funds_joint_millions = Funds_joint/1000000)
+
 #data for Model 1
 
 data_t3_j <- joint_data |>  #getting lag to create deltarep
@@ -395,27 +433,46 @@ data_t3_j <- joint_data |>  #getting lag to create deltarep
 data_t3_j <- data_t3_j |>  #Delta Rep (Independent Variable)
   mutate(deltarep = log(Rep_joint) - log(seats_budget_lag))
 
-data_t3_j <- data_t3_j |>  #Lagged Outlays (for Dependent Variable)
+share3 <- data_t3_j |>  #calculating share of funds (state federal funds/funds for all states in a year)
+  replace_na(list(Funds_joint_millions = 0)) |>
+  group_by(year) |>
+  summarize(annual_funds = sum(Funds_joint_millions))
+
+data_t3_j <- share3 |>   #adding total national outlays to data frame
+  right_join(data_t3_j, by = "year")
+
+data_t3_j <- data_t3_j |>   #calculating share outlays
+  replace_na(list(Funds_joint_millions = 0)) |>
+  mutate(share_funds = Funds_joint_millions / annual_funds)
+
+data_t3_j |>   #checking my work
+  group_by(year) |>
+  summarize(sum = sum(share_funds))
+
+data_t3_j <- data_t3_j |>  #Lagged funds (for Dependent Variable)
   group_by(state) |>
   arrange(year) |>
-  mutate(share_outlays_lag2 = lag(Funds_joint, n = 2),
-         share_outlays_lag4 = lag(Funds_joint, n = 4))
+  mutate(share_funds_lag2 = lag(share_funds, n = 2),
+         share_funds_lag4 = lag(share_funds, n = 4))
 
 data_t3_j <- data_t3_j |>   #adding variable Diff
   filter(year %in% c(1974, 1984, 1994, 2004, 2014)) |>
-  mutate(diff = log(Funds_joint) - log(share_outlays_lag2))
+  mutate(diff = log(share_funds) - log(share_funds_lag2))
 
 data_t3_j <- data_t3_j |>   #adding variable LagDiff
   filter((year == 1974 & fips != 41) | year == 1984 | year == 1994 |year == 2004 | year == 2014) |>
-  mutate(lagdiff = log(share_outlays_lag2)  - log(share_outlays_lag4)) 
+  mutate(lagdiff = log(share_funds_lag2)  - log(share_funds_lag4)) 
 
 data_t3_final_j <- data_t3_j |>   #adding variable DiffDiff
   mutate(diffdiff = diff - lagdiff) |>
   filter(year %in% c(1974, 1994, 2004, 2014))
 
+data_t3_final_j <- data_t3_final_j |>  #creating change indicator variable and only keeping switches
+  mutate(change_indicator = sign(deltarep)) 
+
 saveRDS(data_t3_final_j, "objects/model1data_j.rds")
 
-#data for Model 2
+#data for model 2
 
 data_t3_final_size_j <- data_t3_final_j |>  #adding size variable
   mutate(state_big = state) |>
@@ -436,10 +493,7 @@ saveRDS(data_t3_final_size_j, "objects/model2data_j.rds")
 
 #data for Model 3
 
-data_t3_final_ind_j <- data_t3_final_j |>  #creating change indicator variable
-  mutate(change_indicator = sign(deltarep)) 
-
-data_t3_final_ind_j <- data_t3_final_ind_j |>  #clearning change indicator variable
+data_t3_final_ind_j <- data_t3_final_j |>  #clearning change indicator variable
   mutate(change_indicator2 = case_when(
     change_indicator == 0 ~ 0,
     change_indicator == -1 ~ 1,
@@ -474,11 +528,32 @@ people_per_rep_2013 <- data |>
 
 data_with_natpop_2012 <- data_with_natpop_full |>
   filter(year == 2012) |>
-  select(state,lnrri)
+  select(state, lnrri)
 
 data_with_natpop_2013 <- data_with_natpop_full |>
   filter(year == 2013) |>
-  select(state,lnrri)
+  select(state, lnrri) |>
+  rename('2013 Reapportionment' = lnrri)
+
+data_with_natpop_2003 <- data_with_natpop_full |>
+  filter(year == 2003) |>
+  select(state, lnrri) |>
+  rename('2003 Reapportionment' = lnrri)
+
+data_with_natpop_1993 <- data_with_natpop_full |>
+  filter(year == 1993) |>
+  select(state, lnrri) |>
+  rename('1993 Reapportionment' = lnrri)
+
+data_with_natpop_1983 <- data_with_natpop_full |>
+  filter(year == 1983) |>
+  select(state, lnrri) |>
+  rename('1983 Reapportionment' = lnrri)
+
+data_with_natpop_1973 <- data_with_natpop_full |>
+  filter(year == 1973) |>
+  select(state, lnrri) |>
+  rename('1973 Reapportionment' = lnrri)
 
 data_signs_og <- data_signs_og |>
   mutate(sign_change = as.factor(sign_change))
@@ -492,3 +567,7 @@ saveRDS(data_with_natpop_2012, "objects/lnrri_2012.rds")
 saveRDS(data_with_natpop_2013, "objects/lnrri_2013.rds")
 saveRDS(data_signs_og, "objects/data_signs_og.rds")
 saveRDS(data_signs, "objects/data_signs.rds")
+saveRDS(data_with_natpop_2003, "objects/lnrri_2003.rds")
+saveRDS(data_with_natpop_1993, "objects/lnrri_1993.rds")
+saveRDS(data_with_natpop_1983, "objects/lnrri_1983.rds")
+saveRDS(data_with_natpop_1973, "objects/lnrri_1973.rds")

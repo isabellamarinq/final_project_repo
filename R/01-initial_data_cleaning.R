@@ -121,11 +121,11 @@ joint_data <- joint_data |>
 joint_data <- joint_data |>
   unite("Funds_joint", c("state_local_revenue_dollars", "fedex90_dollars"), na.rm = TRUE, remove = FALSE)
 
-joint_data$Pop_joint <- sub(".*\\_","",joint_data$Pop_joint)
+joint_data$Pop_joint <- sub(".*\\_","", joint_data$Pop_joint)
 
-joint_data$Rep_joint <- sub(".*\\_","",joint_data$Rep_joint)
+joint_data$Rep_joint <- sub(".*\\_","", joint_data$Rep_joint)
 
-joint_data$Funds_joint <- sub(".*\\_","",joint_data$Funds_joint)
+joint_data$Funds_joint <- sub(".*\\_","", joint_data$Funds_joint)
 
 joint_data <- joint_data |>
   mutate("Pop_joint" = as.numeric(Pop_joint))
