@@ -136,6 +136,10 @@ joint_data <- joint_data |>
 joint_data <- joint_data |>
   mutate("Funds_joint" = as.numeric(Funds_joint))
 
+#matching the units to other models
+joint_data <- joint_data |>
+  mutate(Funds_joint_millions = Funds_joint/1000000)
+
 saveRDS(data, "objects/data.rds")
 saveRDS(old_data, "objects/old_data.rds")
 saveRDS(years, "objects/years.rds")

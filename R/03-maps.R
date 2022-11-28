@@ -14,7 +14,40 @@ lnrri2003_map_data <- readRDS("objects/lnrri_2003.rds")
 lnrri1993_map_data <- readRDS("objects/lnrri_1993.rds")
 lnrri1983_map_data <- readRDS("objects/lnrri_1983.rds")
 lnrri1973_map_data <- readRDS("objects/lnrri_1973.rds")
+lnroi2013_map_data <- readRDS("objects/lnroi_2013.rds")
+lnroi2003_map_data <- readRDS("objects/lnroi_2003.rds")
+lnroi1993_map_data <- readRDS("objects/lnroi_1993.rds")
+lnroi1983_map_data <- readRDS("objects/lnroi_1983.rds")
+lnroi1973_map_data <- readRDS("objects/lnroi_1973.rds")
 
+#Composite lnROI map
+lnroimaps <- lnroi2003_map_data |>
+  right_join(lnroi2013_map_data, by = "state")
+
+lnroimaps <- lnroi1993_map_data |>
+  right_join(lnroimaps, by = "state")
+
+lnroimaps <- lnroi1983_map_data |>
+  right_join(lnroimaps, by = "state")
+
+lnroimaps <- lnroi1973_map_data |>
+  right_join(lnroimaps, by = "state")
+
+lnroimaps_final <- cbind(lnroimaps[1], stack(lnroimaps[2:6]))
+
+plot_usmap(data = lnroimaps_final, values = "values", color = "black") + 
+  scale_fill_continuous(
+    low = "white", 
+    high = "darkblue",
+    name = "ln(RRI)", 
+    label = scales::comma) + 
+  facet_wrap(~ ind, nrow = 3) +
+  theme(legend.position = "right") +
+  labs(title = "Log ROI per State (1973-2013)")
+
+ggsave("maps.png", device = "png", path = "figures", width = 10, height = 16, units = 'in')
+
+#Composite lnRRI map
 lnrrimaps <- lnrri2003_map_data |>
   right_join(lnrri2013_map_data, by = "state")
 
@@ -37,7 +70,7 @@ plot_usmap(data = lnrrimaps_final, values = "values", color = "black") +
     label = scales::comma) + 
   facet_wrap(~ ind, nrow = 3) +
   theme(legend.position = "right") +
-  labs(title = "Log RRI per State (1983-2013)")
+  labs(title = "Log RRI per State (1973-2013)")
 
 ggsave("maps.png", device = "png", path = "figures", width = 10, height = 16, units = 'in')
   

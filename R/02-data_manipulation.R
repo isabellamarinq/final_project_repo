@@ -6,7 +6,7 @@ data <- readRDS("objects/data.rds")
 old_data <- readRDS("objects/old_data.rds")
 joint_data <- readRDS("objects/joint_data.rds")
 
-##data for funds comparison plot
+##data for funds comparison plot------------------------------------------------
 
 new_funds <- data |>
   select(year, state_local_revenue_dollars, fed_expenditures_dollars, Pop) |>
@@ -40,7 +40,7 @@ funds_comp_data <- funds_comp_data[ , c(1, 4, 8, 9)]
 
 saveRDS(funds_comp_data, "objects/funds_comp_data.rds")
 
-##table 2 with new data
+##table 2-----------------------------------------------------------------------
 
 #just new data
 data <- data |>
@@ -58,7 +58,7 @@ data_with_natpop <- data |>
 data_with_natpop <- data_with_natpop |>
   rename("state_pop" = Pop.x, "national_pop" = Pop.y)
 
-data_with_natpop <- data_with_natpop |>  #RRI Equation, adding RRI variable
+data_with_natpop <- data_with_natpop |>  #RRI Equation, adding RRI variable 
   mutate(lnrri = log((seats_budget_nplus1/state_pop)/(435/national_pop)))
 
 saveRDS(data_with_natpop, "objects/lnrri_table_data.rds")
@@ -74,22 +74,31 @@ joint_data <- joint_data |>
 nat_pop_full <- joint_data |>
   select(year, Pop_joint) |>
   group_by(year) |>
-  summarise_all(sum) 
+  summarise_all(sum) |>
+  ungroup()
+
+nat_funds_full <- joint_data |>  #calculating share of funds (state federal funds/funds for all states in a year)
+  replace_na(list(Funds_joint_millions = 0)) |>
+  group_by(year) |>
+  summarize(annual_funds = sum(Funds_joint_millions)) |>
+  ungroup()
 
 data_with_natpop_full <- joint_data |>
   left_join(nat_pop_full, by = "year")
 
+data_with_natpop_full <- data_with_natpop_full |>   #adding total national outlays to data frame
+  right_join(nat_funds_full, by = "year")
+
 data_with_natpop_full <- data_with_natpop_full |>
   rename("state_pop" = Pop_joint.x, "national_pop" = Pop_joint.y)
 
-data_with_natpop_full <- data_with_natpop_full |>  #RRI Equation, adding RRI variable
-  mutate(lnrri = log((seats_budget_nplus1/state_pop)/(435/national_pop)))
+data_with_natpop_full <- data_with_natpop_full |>  #RRI Equation, adding RRI variable (and ROI)
+  mutate(lnrri = log((seats_budget_nplus1/state_pop)/(435/national_pop)),
+         lnROI = log((Funds_joint_millions/state_pop)/(annual_funds/national_pop)))
 
 saveRDS(data_with_natpop_full, "objects/lnrri_table_data_full.rds")
 
-data_with_natpop_full <- data_with_natpop_full
-
-##fig 3 replication
+##fig 3 replication-------------------------------------------------------------
 
 data_signs_og <- old_data |>   #data5 holds information about whether the number of seats changed from 1993 to 1994 for each state
   filter(year %in% c(1993:1994)) |>
@@ -180,7 +189,7 @@ graph3_og <- graph3_og[ , c(1, 3, 2, 4, 5)]
 
 saveRDS(graph3_og, "objects/graph3data_og.rds")
 
-##fig 3 new
+##fig 3 new---------------------------------------------------------------------
 
 data_signs <- data_with_natpop |>   #data5 holds information about whether the number of seats changed from 2012 to 2014 for each state
   filter(year %in% c(2012, 2014)) |>
@@ -247,6 +256,8 @@ graph3 <- graph3[ , c(1, 3, 2, 4, 5)]
 
 saveRDS(graph3, "objects/graph3data.rds")
 
+##Regression Models Data Replication--------------------------------------------
+
 ##models Replication
 
 #data for model 1
@@ -280,21 +291,21 @@ data_t3_og <- data_t3_og |>  #Lagged Outlays (for Dependent Variable)
   mutate(share_outlays_lag2 = lag(share_outlays, n = 2),
          share_outlays_lag4 = lag(share_outlays, n = 4))
 
-data_t3_og <- data_t3_og |>   #adding variable Diff
+data_t3_og <- data_t3_og |>  #creating change indicator variable and only keeping switches
+  mutate(change_indicator = sign(deltarep))
+
+data_t3_final_og <- data_t3_og |>   #adding variable Diff
   filter(year %in% c(1974, 1984, 1994, 2004)) |>
   mutate(diff = log(share_outlays) - log(share_outlays_lag2))
 
-data_t3_og <- data_t3_og |>   #adding variable LagDiff
+data_t3_final_og <- data_t3_final_og |>   #adding variable LagDiff
   filter((year == 1974 & fips != 41) | year == 1984 | year == 1994 | year == 2004) |>
   mutate(lagdiff = log(share_outlays_lag2)  - log(share_outlays_lag4)) 
 
 
-data_t3_final_og <- data_t3_og |>   #adding variable DiffDiff
+data_t3_final_og <- data_t3_final_og |>   #adding variable DiffDiff
   mutate(diffdiff = diff - lagdiff) |>
   filter(year %in% c(1974, 1994, 2004))
-
-data_t3_final_og <- data_t3_final_og |>  #creating change indicator variable and only keeping switches
-  mutate(change_indicator = sign(deltarep))
 
 saveRDS(data_t3_final_og, "objects/model1data_og.rds")
 
@@ -361,20 +372,20 @@ data_t3 <- data_t3 |>  #Lagged revenue (for Dependent Variable)
   mutate(share_revenue_lag2 = lag(share_revenue, n = 2),
          share_revenue_lag4 = lag(share_revenue, n = 4))
 
-data_t3 <- data_t3 |>   #adding variable Diff
+data_t3 <- data_t3 |>  #creating change indicator variable and only keeping switches
+  mutate(change_indicator = sign(deltarep)) 
+
+data_t3_final <- data_t3 |>   #adding variable Diff
   filter(year %in% c(2004, 2014)) |>
   mutate(diff = log(share_revenue) - log(share_revenue_lag2))
 
-data_t3 <- data_t3 |>   #adding variable LagDiff
+data_t3_final <- data_t3_final |>   #adding variable LagDiff
   filter(year == 2004 | year == 2014) |>
   mutate(lagdiff = log(share_revenue_lag2)  - log(share_revenue_lag4)) 
 
-data_t3_final <- data_t3 |>   #adding variable DiffDiff
+data_t3_final <- data_t3_final |>   #adding variable DiffDiff
   mutate(diffdiff = diff - lagdiff) |>
   filter(year %in% c(2004, 2014))
-
-data_t3_final <- data_t3_final |>  #creating change indicator variable and only keeping switches
-  mutate(change_indicator = sign(deltarep)) 
 
 saveRDS(data_t3_final, "objects/model1data.rds")
 
@@ -420,10 +431,6 @@ joint_data <- joint_data |>
   ) |>
   mutate(new_dataset = as.numeric(new_dataset))
 
-#matching the units to other models
-joint_data <- joint_data |>
-  mutate(Funds_joint_millions = Funds_joint/1000000)
-
 #data for Model 1
 
 data_t3_j <- joint_data |>  #getting lag to create deltarep
@@ -455,20 +462,20 @@ data_t3_j <- data_t3_j |>  #Lagged funds (for Dependent Variable)
   mutate(share_funds_lag2 = lag(share_funds, n = 2),
          share_funds_lag4 = lag(share_funds, n = 4))
 
-data_t3_j <- data_t3_j |>   #adding variable Diff
+data_t3_j <- data_t3_j |>  #creating change indicator variable and only keeping switches
+  mutate(change_indicator = sign(deltarep)) 
+
+data_t3_final_j <- data_t3_j |>   #adding variable Diff
   filter(year %in% c(1974, 1984, 1994, 2004, 2014)) |>
   mutate(diff = log(share_funds) - log(share_funds_lag2))
 
-data_t3_j <- data_t3_j |>   #adding variable LagDiff
+data_t3_final_j <- data_t3_final_j |>   #adding variable LagDiff
   filter((year == 1974 & fips != 41) | year == 1984 | year == 1994 |year == 2004 | year == 2014) |>
   mutate(lagdiff = log(share_funds_lag2)  - log(share_funds_lag4)) 
 
-data_t3_final_j <- data_t3_j |>   #adding variable DiffDiff
+data_t3_final_j <- data_t3_final_j |>   #adding variable DiffDiff
   mutate(diffdiff = diff - lagdiff) |>
   filter(year %in% c(1974, 1994, 2004, 2014))
-
-data_t3_final_j <- data_t3_final_j |>  #creating change indicator variable and only keeping switches
-  mutate(change_indicator = sign(deltarep)) 
 
 saveRDS(data_t3_final_j, "objects/model1data_j.rds")
 
@@ -501,7 +508,239 @@ data_t3_final_ind_j <- data_t3_final_j |>  #clearning change indicator variable
 
 saveRDS(data_t3_final_ind_j, "objects/model3data_j.rds")
 
-##maps
+##ROI Models Data Manipulation--------------------------------------------------
+
+##Replication
+
+#Model 1
+nat_pop_og <- data_t3_og |>
+  ungroup() |>
+  select(year, pop_census) |>
+  group_by(year) |>
+  summarise_all(sum)
+
+data_ROI_og <- data_t3_og |>
+  left_join(nat_pop_og, by = "year")
+
+data_ROI_og <- data_ROI_og |>
+  rename("state_pop" = pop_census.x, "national_pop" = pop_census.y)
+
+data_ROI_og <- data_ROI_og |>
+  mutate(ROI = ((fedex90/state_pop)/(annual_outlays/national_pop)),
+         RRI = ((seats_budget/state_pop)/(435/national_pop)))
+
+data_ROI_og <- data_ROI_og |>
+  group_by(state) |>
+  arrange(year) |>
+  mutate(ROI_lag = lag(ROI, n = 2), 
+         ROI_lag4 = lag(ROI, n = 4)) |>
+  ungroup()
+  
+data_ROI_og <- data_ROI_og |>
+  group_by(state) |>
+  arrange(year) |>
+  mutate(RRI_lag = lag(RRI, n = 2), RRI_lag4 = lag(RRI, n = 4)) |>
+  ungroup() 
+
+data_ROI_og <- data_ROI_og |>
+  filter(year %in% c(1974, 1984, 1994, 2004)) |>
+  mutate(
+    ROI_diff = (log(ROI)-log(ROI_lag))-(log(ROI_lag) - log(ROI_lag4)),
+    RRI_diff = (log(RRI) - log(RRI_lag)),
+    RRI_diffdiff = (log(RRI) - log(RRI_lag)) - (log(RRI_lag) - log(RRI_lag4))
+    ) |>
+  filter(year %in% c(1974, 1994, 2004))
+
+#Switch Indicator Variable
+data_ROI_og <- data_ROI_og |>
+  mutate(rep_diff = seats_budget - seats_budget_lag) |>
+  mutate(switch = case_when(
+    rep_diff != 0 ~ 1,
+    rep_diff == 0 ~ 0
+  ))
+
+saveRDS(data_ROI_og, "objects/ROImodel1data_og.rds")
+
+#Model 2
+data_ROI_size_og <- data_ROI_og |>  #adding size variable
+  mutate(state_big = state) |>
+  mutate(state_big = case_when(
+    state_big == "California" ~ 1,
+    state_big == "Florida" ~ 1,
+    state_big == "Illinois" ~ 1,
+    state_big == "Michigan" ~ 1, 
+    state_big == "New York" ~ 1,
+    state_big == "Ohio" ~ 1,
+    state_big == "Pennsylvania" ~ 1,
+    state_big == "Texas" ~ 1)) |>  #cleaning size variable
+  mutate_at('state_big', ~replace_na(.,0))
+
+saveRDS(data_ROI_size_og, "objects/ROImodel2data_og.rds")
+
+#Model 3
+
+data_ROI_ind_og <- data_ROI_og |>  #clearning change indicator variable
+  mutate(change_indicator2 = case_when(
+    change_indicator == 0 ~ 0,
+    change_indicator == -1 ~ 1,
+    change_indicator == 1 ~ 0))
+
+saveRDS(data_ROI_ind_og, "objects/ROImodel3data_og.rds")
+
+##New
+
+#Model 1
+
+nat_pop_new <- data_t3 |>
+  ungroup() |>
+  select(year, Pop) |>
+  group_by(year) |>
+  summarise_all(sum)
+
+data_ROI_new <- data_t3 |>
+  left_join(nat_pop_new, by = "year")
+
+data_ROI_new <- data_ROI_new |>
+  rename("state_pop" = Pop.x, "national_pop" = Pop.y)
+
+data_ROI_new <- data_ROI_new |>
+  mutate(ROI = ((state_local_revenue_millions/state_pop)/(annual_revenue/national_pop)),
+         RRI = ((Rep/state_pop)/(435/national_pop)))
+
+data_ROI_new <- data_ROI_new |>
+  group_by(state) |>
+  arrange(year) |>
+  mutate(ROI_lag = lag(ROI, n = 2), 
+         ROI_lag4 = lag(ROI, n = 4)) |>
+  ungroup()
+
+data_ROI_new <- data_ROI_new |>
+  group_by(state) |>
+  arrange(year) |>
+  mutate(RRI_lag = lag(RRI, n = 2), RRI_lag4 = lag(RRI, n = 4)) |>
+  ungroup() 
+
+data_ROI_new <- data_ROI_new |>
+  filter(year %in% c(2004, 2014)) |>
+  mutate(
+    ROI_diff = (log(ROI)-log(ROI_lag))-(log(ROI_lag) - log(ROI_lag4)),
+    RRI_diff = (log(RRI) - log(RRI_lag)),
+    RRI_diffdiff = (log(RRI) - log(RRI_lag)) - (log(RRI_lag) - log(RRI_lag4))
+  )
+
+#Switch Indicator Variable
+data_ROI_new <- data_ROI_new |>
+  mutate(rep_diff = Rep - seats_budget_lag) |>
+  mutate(switch = case_when(
+    rep_diff != 0 ~ 1,
+    rep_diff == 0 ~ 0
+  ))
+
+saveRDS(data_ROI_new, "objects/ROImodel1data_new.rds")
+
+#Model 2
+data_ROI_size_new <- data_ROI_new |>
+  mutate(state_big = state) |>
+  mutate(state_big = case_when(
+    state_big == "California" ~ 1,
+    state_big == "Florida" ~ 1,
+    state_big == "Illinois" ~ 1,
+    state_big == "Michigan" ~ 1, 
+    state_big == "New York" ~ 1,
+    state_big == "Ohio" ~ 1,
+    state_big == "Pennsylvania" ~ 1,
+    state_big == "Texas" ~ 1)) |>  #cleaning size variable
+  mutate_at('state_big', ~replace_na(.,0))
+
+saveRDS(data_ROI_size_new, "objects/ROImodel2data_new.rds")
+
+#Model 3
+data_ROI_ind_new <- data_ROI_new |>
+  mutate(change_indicator2 = case_when(
+    change_indicator == 0 ~ 0,
+    change_indicator == -1 ~ 1,
+    change_indicator == 1 ~ 0))
+
+saveRDS(data_ROI_ind_new, "objects/ROImodel3data_new.rds")
+
+##Joint
+
+#Model 1
+nat_pop_joint <- data_t3_j |>
+  ungroup() |>
+  select(year, Pop_joint) |>
+  group_by(year) |>
+  summarise_all(sum)
+
+data_ROI_joint <- data_t3_j |>
+  left_join(nat_pop_joint, by = "year")
+
+data_ROI_joint <- data_ROI_joint |>
+  rename("state_pop" = Pop_joint.x, "national_pop" = Pop_joint.y)
+
+data_ROI_joint <- data_ROI_joint |>
+  mutate(ROI = ((Funds_joint_millions/state_pop)/(annual_funds/national_pop)),
+         RRI = ((Rep_joint/state_pop)/(435/national_pop)))
+
+data_ROI_joint <- data_ROI_joint |>
+  group_by(state) |>
+  arrange(year) |>
+  mutate(ROI_lag = lag(ROI, n = 2), 
+         ROI_lag4 = lag(ROI, n = 4)) |>
+  ungroup()
+
+data_ROI_joint <- data_ROI_joint |>
+  group_by(state) |>
+  arrange(year) |>
+  mutate(RRI_lag = lag(RRI, n = 2), RRI_lag4 = lag(RRI, n = 4)) |>
+  ungroup() 
+
+data_ROI_joint <- data_ROI_joint |>
+  filter(year %in% c(1974, 1984, 1994, 2004, 2014)) |>
+  mutate(
+    ROI_diff = (log(ROI)-log(ROI_lag))-(log(ROI_lag) - log(ROI_lag4)),
+    RRI_diff = (log(RRI) - log(RRI_lag)),
+    RRI_diffdiff = (log(RRI) - log(RRI_lag)) - (log(RRI_lag) - log(RRI_lag4))
+  ) |>
+  filter(year %in% c(1974, 1994, 2004, 2014))
+
+#Switch Indicator Variable
+data_ROI_joint <- data_ROI_joint |>
+  mutate(rep_diff = Rep - seats_budget_lag) |>
+  mutate(switch = case_when(
+    rep_diff != 0 ~ 1,
+    rep_diff == 0 ~ 0
+  ))
+
+saveRDS(data_ROI_joint, "objects/ROImodel1data_joint.rds")
+
+#Model 2
+
+data_ROI_size_joint <- data_ROI_joint |>
+  mutate(state_big = state) |>
+  mutate(state_big = case_when(
+    state_big == "California" ~ 1,
+    state_big == "Florida" ~ 1,
+    state_big == "Illinois" ~ 1,
+    state_big == "Michigan" ~ 1, 
+    state_big == "New York" ~ 1,
+    state_big == "Ohio" ~ 1,
+    state_big == "Pennsylvania" ~ 1,
+    state_big == "Texas" ~ 1)) |>  #cleaning size variable
+  mutate_at('state_big', ~replace_na(.,0))
+
+saveRDS(data_ROI_size_joint, "objects/ROImodel2data_joint.rds")
+
+#Model 3
+data_ROI_ind_joint <- data_ROI_joint |>
+  mutate(change_indicator2 = case_when(
+    change_indicator == 0 ~ 0,
+    change_indicator == -1 ~ 1,
+    change_indicator == 1 ~ 0))
+
+saveRDS(data_ROI_ind_joint, "objects/ROImodel3data_joint.rds")
+
+##maps--------------------------------------------------------------------------
 
 #maps with seat values
 
@@ -561,6 +800,32 @@ data_signs_og <- data_signs_og |>
 data_signs <- data_signs |>
   mutate(sign_change = as.factor(sign_change))
 
+#maps with ROI
+ROI_2013 <- data_with_natpop_full |>
+  filter(year == 2013) |>
+  select(state, lnROI) |>
+  rename('2013' = lnROI)
+
+ROI_2003 <- data_with_natpop_full |>
+  filter(year == 2003) |>
+  select(state, lnROI) |>
+  rename('2003' = lnROI)
+
+ROI_1993 <- data_with_natpop_full |>
+  filter(year == 1993) |>
+  select(state, lnROI) |>
+  rename('1993' = lnROI)
+
+ROI_1983 <- data_with_natpop_full |>
+  filter(year == 1983) |>
+  select(state, lnROI) |>
+  rename('1983' = lnROI)
+
+ROI_1973 <- data_with_natpop_full |>
+  filter(year == 1974) |>
+  select(state, lnROI) |>
+  rename('1974' = lnROI)
+
 saveRDS(people_per_rep_2012, "objects/people_per_rep_2012.rds")
 saveRDS(people_per_rep_2013, "objects/people_per_rep_2013.rds")
 saveRDS(data_with_natpop_2012, "objects/lnrri_2012.rds")
@@ -571,3 +836,8 @@ saveRDS(data_with_natpop_2003, "objects/lnrri_2003.rds")
 saveRDS(data_with_natpop_1993, "objects/lnrri_1993.rds")
 saveRDS(data_with_natpop_1983, "objects/lnrri_1983.rds")
 saveRDS(data_with_natpop_1973, "objects/lnrri_1973.rds")
+saveRDS(ROI_2013, "objects/lnroi_2013.rds")
+saveRDS(ROI_2003, "objects/lnroi_2003.rds")
+saveRDS(ROI_1993, "objects/lnroi_1993.rds")
+saveRDS(ROI_1983, "objects/lnroi_1983.rds")
+saveRDS(ROI_1973, "objects/lnroi_1973.rds")

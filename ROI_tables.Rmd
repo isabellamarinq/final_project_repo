@@ -1,0 +1,101 @@
+---
+title: "ROI Regression Tables"
+output:
+  word_document: default
+  html_document: default
+date: "2022-11-27"
+---
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+library(ggplot2)
+library(tidyverse)
+library(modelsummary)
+library(fixest)
+```
+
+```{r, echo = FALSE}
+ROI1_og <- readRDS("objects/ROImodel1data_og.rds")
+ROI2_og <- readRDS("objects/ROImodel2data_og.rds")
+ROI3_og <- readRDS("objects/ROImodel3data_og.rds")
+
+ROImodel1_og <- fixest::feols(ROI_diff ~ RRI_diffdiff:switch | year, data = ROI1_og, vcov = ~ state)
+ROImodel2_og <- fixest::feols(ROI_diff ~ RRI_diffdiff:switch + RRI_diffdiff:switch:state_big | year, data = ROI2_og, vcov = ~ state)
+ROImodel3_og <- fixest::feols(ROI_diff ~ RRI_diffdiff:switch + RRI_diffdiff:switch:change_indicator2 | year, data = ROI3_og, vcov = ~ state)
+
+ROImodels_old <- list(
+  "ROI" = ROImodel1_og, 
+  "ROI w/ Size" = ROImodel2_og,
+  "ROI w/ Seats Loss" = ROImodel3_og
+  )
+
+modelsummary(
+  ROImodels_old, 
+  fmt = 3,  
+  gof_map = NA,
+  statistic = NULL,
+  coef_map = c("RRI_diffdiff:switch" = "(ln(RRI) - 2 year lag ln(RRI)) x switch", 
+               "RRI_diffdiff:switch:state_big" = "(ln(RRI) - 2 year lag ln(RRI)) x switch x large",
+               "RRI_diffdiff:switch:change_indicator2" = "(ln(RRI) - 2 year lag ln(RRI)) x switch x lose"),
+  estimate = "{estimate} ({std.error})",
+  notes = list('n = 149', 'Control variables not included on the table are year fixed effects', 'Estimates, with standard errors in parnetheses. Standard Error is clustered by state.'),
+  title = "Effects of Changes in Logged RRI on First Difference in Changes in Logged ROI Replication"
+  )
+```
+
+```{r, echo = FALSE}
+ROI1_new <- readRDS("objects/ROImodel1data_new.rds")
+ROI2_new <- readRDS("objects/ROImodel2data_new.rds")
+ROI3_new <- readRDS("objects/ROImodel3data_new.rds")
+
+ROImodel1_new <- fixest::feols(ROI_diff ~ RRI_diffdiff:switch | year, data = ROI1_new, vcov = ~ state)
+ROImodel2_new <- fixest::feols(ROI_diff ~ RRI_diffdiff:switch + RRI_diffdiff:switch:state_big | year, data = ROI2_new, vcov = ~ state)
+ROImodel3_new <- fixest::feols(ROI_diff ~ RRI_diffdiff:switch + RRI_diffdiff:switch:change_indicator2 | year, data = ROI3_new, vcov = ~ state)
+
+ROImodels_new <- list(
+  "ROI" = ROImodel1_new, 
+  "ROI w/ Size" = ROImodel2_new,
+  "ROI w/ Seats Loss" = ROImodel3_new
+  )
+
+modelsummary(
+  ROImodels_new, 
+  fmt = 3,  
+  gof_map = NA,
+  statistic = NULL,
+  coef_map = c("RRI_diffdiff:switch" = "(ln(RRI) - 2 year lag ln(RRI)) x switch", 
+               "RRI_diffdiff:switch:state_big" = "(ln(RRI) - 2 year lag ln(RRI)) x switch x large",
+               "RRI_diffdiff:switch:change_indicator2" = "(ln(RRI) - 2 year lag ln(RRI)) x switch x lose"),
+  estimate = "{estimate} ({std.error})",
+  notes = list('n = 149', 'Control variables not included on the table are year fixed effects', 'Estimates, with standard errors in parnetheses. Standard Error is clustered by state.'),
+  title = "Effects of Changes in Logged RRI on First Difference in Changes in Logged ROI wth New Data"
+  )
+```
+
+```{r, echo = FALSE}
+ROI1_j <- readRDS("objects/ROImodel1data_joint.rds")
+ROI2_j <- readRDS("objects/ROImodel2data_joint.rds")
+ROI3_j <- readRDS("objects/ROImodel3data_joint.rds")
+
+ROImodel1_j <- fixest::feols(ROI_diff ~ RRI_diffdiff:switch | year, data = ROI1_j, vcov = ~ state)
+ROImodel2_j <- fixest::feols(ROI_diff ~ RRI_diffdiff:switch + RRI_diffdiff:switch:state_big | year, data = ROI2_j, vcov = ~ state)
+ROImodel3_j <- fixest::feols(ROI_diff ~ RRI_diffdiff:switch + RRI_diffdiff:switch:change_indicator2 | year, data = ROI3_j, vcov = ~ state)
+
+ROImodels_j <- list(
+  "ROI" = ROImodel1_j, 
+  "ROI w/ Size" = ROImodel2_j,
+  "ROI w/ Seats Loss" = ROImodel3_j
+  )
+
+modelsummary(
+  ROImodels_j, 
+  fmt = 3,  
+  gof_map = NA,
+  statistic = NULL,
+  coef_map = c("RRI_diffdiff:switch" = "(ln(RRI) - 2 year lag ln(RRI)) x switch", 
+               "RRI_diffdiff:switch:state_big" = "(ln(RRI) - 2 year lag ln(RRI)) x switch x large",
+               "RRI_diffdiff:switch:change_indicator2" = "(ln(RRI) - 2 year lag ln(RRI)) x switch x lose"),
+  estimate = "{estimate} ({std.error})",
+  notes = list('n = 149', 'Control variables not included on the table are year fixed effects', 'Estimates, with standard errors in parnetheses. Standard Error is clustered by state.'),
+  title = "Effects of Changes in Logged RRI on First Difference in Changes in Logged ROI with Joint Data"
+  )
+```
+
